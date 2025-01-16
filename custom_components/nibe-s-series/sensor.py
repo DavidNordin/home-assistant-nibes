@@ -1,0 +1,168 @@
+"""Sensor platform for NIBE."""
+import logging
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, EntityCategory, SensorStateClass
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import STATE_OFF
+from homeassistant.const import STATE_ON
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
+
+from pymodbus.client.mixin import ModbusClientMixin
+
+from .const import (
+    DISCRETE_INPUTS,
+    DOMAIN,
+    NIBE_SENSORS,
+    INPUT_REGISTERS,
+)
+from .entity import NibeEntity
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry, async_add_devices: AddEntitiesCallback
+):
+    """Setup sensor platform."""
+    _LOGGER.debug("NibeSensor.sensor.py")
+    coordinator = hass.data[DOMAIN]["coordinator"]
+
+    sensors = []
+    for sensor in NIBE_SENSORS:
+        sensors.append(NIBESensor(coordinator, sensor, entry))
+    sensors.append(NibeLastSeenSensor(coordinator, entry))
+    sensors.append(NibeRecycleEfficiencySensor(coordinator, entry))
+    async_add_devices(sensors)
+
+
+class NibeSensor(NibeEntity, SensorEntity):
+    """NIBE sensor class."""
+
+    def __init__(self, coordinator: CoordinatorEntity, idx, config_entry):
+        _LOGGER.debug("NibeSensor.__init__()")
+        super().__init__(coordinator, idx, config_entry)
+        self.coordinator = coordinator
+        self.idx = idx
+
+        self._attr_native_unit_of_measurement = self.idx["unit_of_measurement"]
+        self._attr_device_class = self.idx["device_class"]
+        if self._attr_device_class == SensorDeviceClass.ENUM:
+            self._attr_options = self.idx["options"]
+        self._attr_state_class = self.idx["state_class"]
+
+        self._attr_entity_category = self.idx["entity_category"]
+        self._attr_native_value = self._get_value()
+
+    def _get_value(self):
+        """Get the value from the coordinator"""
+        if self.idx["register_type"] == INPUT_REGISTERS:
+            value = self.coordinator.input_registers[self.idx["address"]]
+            value = ModbusClientMixin.convert_from_registers([value], ModbusClientMixin.DATATYPE.INT16)
+
+            if self._attr_device_class == SensorDeviceClass.ENUM:
+                return self._attr_options[value]
+            return value * self.idx["scale"]
+        if self.idx["register_type"] == DISCRETE_INPUTS:
+            value = self.coordinator.discrete_inputs[self.idx["address"]]
+            if value is False:
+                return STATE_OFF
+            else:
+                return STATE_ON
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        _LOGGER.debug("NibeSensor._handle_coordinator_update()")
+        self._attr_native_value = self._get_value()
+        _LOGGER.debug(
+            "%s: %s %s",
+            self._attr_name,
+            self._attr_native_value,
+            self._attr_native_unit_of_measurement,
+        )
+        self.async_write_ha_state()
+
+
+class NibeLastSeenSensor(NibeEntity, SensorEntity):
+    """NIBE last seen sensor class."""
+
+    def __init__(self, coordinator: CoordinatorEntity, config_entry):
+        _LOGGER.debug("NibeLastSeenSensor.__init__()")
+        idx = {
+            "name": "Last seen",
+            "device_class": SensorDeviceClass.TIMESTAMP,
+            "icon": "mdi:clock",
+            "modbus_address": "last_seen",
+        }
+        super().__init__(coordinator, idx, config_entry)
+        self._attr_native_unit_of_measurement = None
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_native_value = self._get_value()
+
+    def _get_value(self):
+        """Get the value from the coordinator"""
+        return dt_util.now(dt_util.DEFAULT_TIME_ZONE)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        _LOGGER.debug("NibeLastSeenSensor._handle_coordinator_update()")
+        self._attr_native_value = self._get_value()
+        _LOGGER.debug(
+            "%s: %s %s",
+            self._attr_name,
+            self._attr_native_value,
+            self._attr_native_unit_of_measurement,
+        )
+        self.async_write_ha_state()
+
+
+class NibeRecycleEfficiencySensor(NibeEntity, SensorEntity):
+    """NibeRecycleEfficiencySensor class."""
+
+    def __init__(self, coordinator: CoordinatorEntity, config_entry):
+        _LOGGER.debug("NibeRecycleEfficiencySensor.__init__()")
+        idx = {
+            "name": "Recycle efficiency",
+            "icon": "mdi:recycle",
+            "modbus_address": "recycle_efficiency",
+        }
+        super().__init__(coordinator, idx, config_entry)
+        self.coordinator = coordinator
+        self.idx = idx
+        self._attr_native_unit_of_measurement = "%"
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_native_value = self._get_value()
+
+    def _get_value(self):
+        """Get the value from the coordinator"""
+        heat_recovery_temperature = ModbusClientMixin.convert_from_registers([self.coordinator.input_registers[6]], ModbusClientMixin.DATATYPE.INT16) * 0.1
+        outdoor_temperature = ModbusClientMixin.convert_from_registers([self.coordinator.input_registers[1]], ModbusClientMixin.DATATYPE.INT16) * 0.1
+        extract_air_temperature = ModbusClientMixin.convert_from_registers([self.coordinator.input_registers[3]], ModbusClientMixin.DATATYPE.INT16) * 0.1
+        _LOGGER.debug(
+            "Recycle efficiency: %s, %s, %s",
+            heat_recovery_temperature,
+            outdoor_temperature,
+            extract_air_temperature,
+        )
+        try:
+            factor = ((heat_recovery_temperature - outdoor_temperature) / (extract_air_temperature - outdoor_temperature)) * 100
+            return round(factor, 2)
+        except Exception:
+            return 0
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        _LOGGER.debug("NibeRecycleEfficiencySensor._handle_coordinator_update()")
+        self._attr_native_value = self._get_value()
+        _LOGGER.debug(
+            "%s: %s %s",
+            self._attr_name,
+            self._attr_native_value,
+            self._attr_native_unit_of_measurement,
+        )
+        self.async_write_ha_state()

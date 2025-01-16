@@ -1,0 +1,31 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Configuration of name and unit.",
+                "data": {
+                    "device_name": "Name",
+                    "host_name": "Host name or IP address",
+                    "host_port": "Port number"
+                }
+            }
+        },
+        "error": {
+            "failed_to_connect": "Failed to connect to unit."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "description": "Configuration of unit.",
+                "data": {
+                    "host_name": "Host name or IP address",
+                    "host_port": "Port number"
+                }
+            }
+        },
+        "error": {
+            "failed_to_connect": "Failed to connect to unit."
+        }
+    }
+}

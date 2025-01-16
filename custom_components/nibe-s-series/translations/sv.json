@@ -1,0 +1,31 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Konfiguration av namn och enhet.",
+                "data": {
+                    "device_name": "Namn",
+                    "host_name": "Värdnamn eller IP address",
+                    "host_port": "Port nummer"
+                }
+            }
+        },
+        "error": {
+            "failed_to_connect": "Misslyckades med anslutning."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "description": "Konfiguration av enhet.",
+                "data": {
+                    "host_name": "Värdnamn eller IP address",
+                    "host_port": "Port nummer"
+                }
+            }
+        },
+        "error": {
+            "failed_to_connect": "Misslyckades med anslutning."
+        }
+    }
+}
