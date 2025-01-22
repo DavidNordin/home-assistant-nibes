@@ -8,9 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-from pymodbus.client import (
-    AsyncModbusTcpClient,
-)
+from pymodbus.client import AsyncModbusTcpClient
 
 from .const import (
     CONF_HOST_NAME,
@@ -22,18 +20,18 @@ from .const import (
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-async def async_setup(
-    hass: HomeAssistant, config: ConfigType
-):  # pylint: disable=unused-argument
-    """Set up this integration using YAML is not supported."""
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the integration using YAML (not supported)."""
+    _LOGGER.debug("async_setup: YAML configuration is not supported")
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up this integration using UI."""
-    _LOGGER.debug("async_setup_entry")
-    host_name = get_parameter(entry, CONF_HOST_NAME)
-    host_port = int(get_parameter(entry, CONF_HOST_PORT))
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up this integration from a configuration entry."""
+    _LOGGER.debug("Setting up entry: %s", entry.title)
+
+    host_name = entry.data.get(CONF_HOST_NAME)
+    host_port = int(entry.data.get(CONF_HOST_PORT))
     client = AsyncModbusTcpClient(host_name, port=host_port)
 
     if DOMAIN not in hass.data:
@@ -51,8 +49,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Handle removal of an entry."""
-    _LOGGER.debug("async_unload_entry")
+    """Unload a configuration entry."""
+    _LOGGER.debug("Unloading entry: %s", entry.title)
 
     unloaded = all(
         await asyncio.gather(
@@ -62,16 +60,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ]
         )
     )
+
     if unloaded:
-        coordinator = hass.data[DOMAIN]["coordinator"]
+        coordinator = hass.data[DOMAIN].pop("coordinator", None)
         if coordinator is not None:
             coordinator.close()
-            hass.data[DOMAIN]["coordinator"] = None
+
     return unloaded
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload config entry."""
-    _LOGGER.debug("async_reload_entry")
+    """Reload a configuration entry."""
+    _LOGGER.debug("Reloading entry: %s", entry.title)
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)

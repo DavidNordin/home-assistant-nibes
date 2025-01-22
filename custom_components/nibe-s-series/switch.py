@@ -6,74 +6,64 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    COIL,
-    DOMAIN,
-    NIBE_SWITCHES,
-    HOLDING_REGISTERS,
-)
+from .const import DOMAIN, COIL, HOLDING_REGISTERS
 from .entity import NibeEntity
 
 _LOGGER = logging.getLogger(__name__)
 
+NIBE_SWITCHES = [
+    {"name": "Allow Heat (Manual)", "address": 181, "register_type": HOLDING_REGISTERS},
+    {"name": "Allow Cooling (Manual)", "address": 182, "register_type": HOLDING_REGISTERS},
+    {"name": "Reset Alarm", "address": 22, "register_type": HOLDING_REGISTERS},
+    {"name": "Allow Addition (Manual)", "address": 180, "register_type": HOLDING_REGISTERS},
+    {"name": "Operating Mode (Manual)", "address": 237, "register_type": HOLDING_REGISTERS},
+]
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry, async_add_devices
-):  # pylint: disable=unused-argument
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_devices):
     """Setup switch platform."""
-    _LOGGER.debug("NIBE.switch.py")
+    _LOGGER.debug("Setting up NIBE switches")
 
     coordinator = hass.data[DOMAIN]["coordinator"]
-    switches = []
-    for switch in NIBE_SWITCHES:
-        switches.append(NibeSwitch(coordinator, switch, entry))
-
+    switches = [NibeSwitch(coordinator, switch, entry) for switch in NIBE_SWITCHES]
     async_add_devices(switches)
 
 
 class NibeSwitch(NibeEntity, SwitchEntity):
-    """NIBE switch class."""
+    """NIBE switch entity class."""
 
-    def __init__(self, coordinator: CoordinatorEntity, idx, entry):
-        _LOGGER.debug("NibeSwitch.__init__()")
-        super().__init__(coordinator, idx, entry)
+    def __init__(self, coordinator: CoordinatorEntity, idx, config_entry):
+        _LOGGER.debug("Initializing NibeSwitch: %s", idx["name"])
+        super().__init__(coordinator, idx, config_entry)
         self.idx = idx
         self.coordinator = coordinator
         self._attr_is_on = self._get_value()
 
     def _get_value(self):
-        """Get the value from the coordinator"""
+        """Get the value from the coordinator."""
         if self.idx["register_type"] == COIL:
-            return self.coordinator.coils[self.idx["address"]]
+            return self.coordinator.coils.get(self.idx["address"], False)
         if self.idx["register_type"] == HOLDING_REGISTERS:
-            return self.coordinator.holding_registers[self.idx["address"]]
+            return bool(self.coordinator.holding_registers.get(self.idx["address"], 0))
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        _LOGGER.debug("NibeSwitch._handle_coordinator_update()")
         self._attr_is_on = self._get_value()
-        _LOGGER.debug(
-            "%s: %s",
-            self._attr_name,
-            self._attr_is_on,
-        )
+        _LOGGER.debug("Updated NibeSwitch %s: %s", self._attr_name, self._attr_is_on)
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the entity on."""
-        _LOGGER.debug("NibeSwitch.async_turn_on()")
+        """Turn the switch on."""
+        _LOGGER.debug("Turning on NibeSwitch: %s", self._attr_name)
         if self.idx["register_type"] == COIL:
-            result = await self.coordinator.write_coil(self.idx["address"], True)
+            await self.coordinator.write_coil(self.idx["address"], True)
         elif self.idx["register_type"] == HOLDING_REGISTERS:
-            result = await self.coordinator.write_register(self.idx["address"], 1)
-        _LOGGER.debug("async_turn_on: %s", result)
+            await self.coordinator.write_register(self.idx["address"], 1)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the entity off."""
-        _LOGGER.debug("NibeSwitch.async_turn_off()")
+        """Turn the switch off."""
+        _LOGGER.debug("Turning off NibeSwitch: %s", self._attr_name)
         if self.idx["register_type"] == COIL:
-            result = await self.coordinator.write_coil(self.idx["address"], False)
+            await self.coordinator.write_coil(self.idx["address"], False)
         elif self.idx["register_type"] == HOLDING_REGISTERS:
-            result = await self.coordinator.write_register(self.idx["address"], 0)
-        _LOGGER.debug("async_turn_off: %s", result)
+            await self.coordinator.write_register(self.idx["address"], 0)

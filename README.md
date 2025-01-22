@@ -8,70 +8,103 @@
 
 # Nibe S-series component for Home Assistant
 
-
 Control and monitor your Nibe S-series unit from Home Assistant via ModbusTCP.
 
 <p align="center">
-<img width="250" alt="Sensors" src="https://raw.githubusercontent.com/DavidNordin/home-assistant-nibes/master/assets/sensors.png"><img width="250" alt="Controls" src="https://raw.githubusercontent.com/DavidNordin/home-assistant-nibes/master/assets/controls.png"><img width="250" alt="Diagnostic" src="https://raw.githubusercontent.com/DavidNordin/home-assistant-nibes/master/assets/diagnostic.png">
+<img width="250" alt="Sensors" src="https://raw.githubusercontent.com/DavidNordin/home-assistant-nibes/master/assets/sensors.png">
+<img width="250" alt="Controls" src="https://raw.githubusercontent.com/DavidNordin/home-assistant-nibes/master/assets/controls.png">
+<img width="250" alt="Diagnostic" src="https://raw.githubusercontent.com/DavidNordin/home-assistant-nibes/master/assets/diagnostic.png">
 </p>
 
+---
 
-
+## Features
 
 ### Sensors
-| Sensor  | Modbus register |
-| ------------- | ------------- |
-|Boost input|1x00002|
-|Current exhaust fan power|3x00026|
-|Current exhaust fan step|3x00024|
-|Current heating power|3x00029|
-|Current heat/cold recovery power|3x00030|
-|Current supply fan power|3x00025|
-|Current supply fan step|3x00023|
-|Exhaust air temperature|3x00005|
-|Exhaust fan alarm|1x00022|
-|Extract air temperature|3x00004|
-|Filter days left|3x00020|
-|Filter timer alarm|1x00025|
-|Fire alarm|1x00010|
-|Heat recovery temperature|3x00007|
-|Last seen|_Calculated_|
-|Night cooling active|1x00038|
-|Outdoor temperature | 3x00002  |
-|Overpressure input|1x00003|
-|Recycle efficiency|_Calculated_|
-|Rotor alarm|1x00011|
-|Startup 1st phase|1x00028|
-|Startup 2nd phase|1x00029|
-|Supply air temperature|3x00003|
-|Supply fan alarm|1x00021|
+| Sensor                           | Modbus Register  |
+|----------------------------------|------------------|
+| Outdoor Temperature (BT1)        | 3x00001          |
+| Supply Temperature (BT2)         | 3x00005          |
+| Return Temperature (BT3)         | 3x00007          |
+| Hot Water Start (BT5)            | 3x02014          |
+| Hot Water Top (BT7)              | 3x00008          |
+| Hot Water Charging (BT6)         | 3x00009          |
+| Cold Carrier In (BT10)           | 3x00010          |
+| Cold Carrier Out (BT11)          | 3x00011          |
+| Flow Temperature (BT12)          | 3x00012          |
+| Hot Gas Temperature (BT14)       | 3x00013          |
+| Liquid Line Temperature (BT15)   | 3x00014          |
+| Suction Gas Temperature (BT17)   | 3x00016          |
+| Room Temperature 1 (BT50)        | 3x00026          |
+| External Flow Temperature (BT25) | 3x00039          |
+| Compressor Temperature (BT29)    | 3x00086          |
+| Flow Sensor (BF1)                | 3x00040          |
+| Current BE3                      | 3x00046          |
+| Current BE2                      | 3x00048          |
+| Current BE1                      | 3x00050          |
+| Calculated Flow Temp (Heating)   | 3x01017          |
+| Calculated Flow Temp (Cooling)   | 3x01567          |
+| Total Runtime Additions           | 3x01025          |
+| Flow Meter Hot Water             | 3x01575          |
+| Flow Meter Heat                  | 3x01577          |
+| Flow Meter Pool                  | 3x01581          |
+| Flow Meter Hot Water Compressor  | 3x01583          |
+| Flow Meter Heat Compressor       | 3x01585          |
+| Active Alarm                     | 3x02195          |
+| Alarm Number                     | 3x01975          |
+| Momentary Power Usage            | 3x02166          |
 
+---
 
 ### Buttons
-| Button  | Modbus register |
-| ------------- | ------------- |
-| Clear Alarms |0x00005|
-|Reset filter timer|0x00006|
-|Sync date and time|4x00400 - 4x00405|
+| Button                | Modbus Register      |
+|-----------------------|----------------------|
+| Reset Alarm           | 4x00022             |
+| Sync Date and Time    | 4x00400 - 4x00405   |
 
+---
 
 ### Switches
-| Switch  | Modbus register |
-| ------------- | ------------- |
-|Away mode|0x00004|
-|Boost mode|0x00003|
-|Heater enabled|4x00067|
-|Night cooling enabled|4x00019|
-|Overpressure mode|0x00002|
-|Power|0x00001|
-|Preheater enabled|4x00064|
+| Switch                          | Modbus Register  |
+|---------------------------------|------------------|
+| Allow Heat (Manual)             | 4x00181          |
+| Allow Cooling (Manual)          | 4x00182          |
+| Allow Addition (Manual)         | 4x00180          |
+| Operating Mode (Manual)         | 4x00237          |
+
+---
 
 ### Numbers
-| Number  | Modbus register |
-| ------------- | ------------- |
-|Night cooling exhaust high limit|4x00021|
-|Night cooling exhaust low limit|4x00022|
-|Night cooling indoor-outdoor diff. limit|4x00020|
+| Number                                  | Modbus Register |
+|----------------------------------------|-----------------|
+| Degree Minutes                         | 4x00011         |
+| Cooling Degree Minutes                 | 4x00020         |
+| Heating Curve                          | 4x00026         |
+| Heating Curve Offset                   | 4x00030         |
+| Minimum Flow Temp                      | 4x00034         |
+| Maximum Flow Temp                      | 4x00038         |
+| Start Temp Hot Water (Normal)          | 4x00059         |
+| Stop Temp Hot Water (Normal)           | 4x00063         |
+| Period Time Heating                    | 4x00092         |
+| Period Time Hot Water                  | 4x00093         |
+| Period Time Cooling                    | 4x00094         |
+| Degree Minutes Start Addition          | 4x00679         |
+| Degree Minutes Start Compressor        | 4x00097         |
+| Control Calculated Flow Temp (Heat)    | 4x05009         |
+| Control Calculated Flow Temp (Cooling) | 4x05017         |
+
+---
+
+### Selects
+| Select                                  | Modbus Register |
+|----------------------------------------|-----------------|
+| Hot Water Demand                        | 4x00056         |
+| Operating Mode                          | 4x00237         |
+| Brine Pump Mode                         | 4x00096         |
+| Heating Pump Mode                       | 4x00853         |
+| Operational Priority                    | 3x01028         |
+
+---
 
 ## Installation
 
@@ -84,12 +117,13 @@ Control and monitor your Nibe S-series unit from Home Assistant via ModbusTCP.
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=nibes)
 
+---
 
-## Configuration Nibe unit
+## Configuration Nibe Unit
 
-Enable modbus and network on the Nibe unit.
+Enable Modbus and network on the Nibe unit.
 
-
+---
 
 [releases-shield]: https://img.shields.io/github/v/release/DavidNordin/home-assistant-nibes?style=flat-square
 [releases]: https://github.com/DavidNordin/home-assistant-nibes/releases
